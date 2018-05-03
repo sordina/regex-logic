@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 506b2353fa05410b1534d8a0e324167afae7559e3a86253a8efc62225101b108
+-- hash: d0141e1bd6bf77fddd42c9a00824bae57660447547c17aca5ba14133a47d066b
 
 name:           regex-logic
 version:        0.1.0.0
@@ -25,6 +25,8 @@ executable regex-logic
       src
   build-depends:
       base >=4.7 && <5
+    , logict
+    , megaparsec
   other-modules:
       Paths_regex_logic
   default-language: Haskell2010
