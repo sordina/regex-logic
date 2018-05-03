@@ -22,7 +22,9 @@ data Regex = Empty              -- The empty string
            | Concat Regex Regex -- Concatenation of two regexs
            | Alt    Regex Regex -- Choice between two regexs
            | Kleene Regex       -- The Kleene star
-           deriving Show
+
+instance Show Regex where
+  show r = "/" <> pretty r <> "/"
 
 instance Monoid Regex where
   mempty        = Empty
@@ -34,13 +36,31 @@ instance IsString Regex where fromString x = mconcat $ map Lit x
 
 main :: IO ()
 main = do
-  print $ observeMany          14 $ produceAll        (Alt (Kleene (Lit 'a')) (Lit 'b'))
+  print $ observeMany          14 $ produceAll (Alt (Kleene (Lit 'a')) (Lit 'b'))
   mapM_ putStrLn $ observeMany 4  $ produceAll $ (Kleene (Alt "snuggy" "buggy")) <> "bug"
   print $ parseRegex "a|b|c*"
   print $ parseRegex "a|(b|c)*"
   print $ parseRegex "abc"
   print $ flip matchString "a" <$> parseRegex "a|(b|c)*"
   print $ flip matchString "bbbcbcbcbbbb" <$> parseRegex "a|(b|c)*"
+
+buggyRegex :: Either (ParseError Char ()) Regex
+buggyRegex = parseRegex "the (snuggy|buggy)*bug"
+
+-- Print Functions
+
+pretty :: Regex -> String
+pretty (Lit s)
+  | elem s specials            = "\\" ++ [s]
+  | otherwise                  = [s]
+pretty Empty                   = ""
+pretty (Alt (Lit s1) (Lit s2)) = [s1] <> "|" <> [s2]
+pretty (Alt (Lit s1) r2)       = [s1] <> "|(" <> pretty r2 <> ")"
+pretty (Alt r1 (Lit s2))       = "(" <> pretty r1 <> ")|" <> [s2]
+pretty (Alt r1 r2)             = "(" <> pretty r1 <> ")|(" <> pretty r2 <> ")"
+pretty (Concat r1 r2)          = pretty r1 <> pretty r2
+pretty (Kleene (Lit s))        = [s] <> "*"
+pretty (Kleene r)              = "(" <> pretty r <> ")*"
 
 -- Logic Functions
 
@@ -58,10 +78,10 @@ matchString r s = isRight $ parse (matcher r) "<MATCHER>" s
 
 matcher :: Regex -> Parsec () String ()
 matcher Empty          = eof
-matcher (Alt r1 r2)    = matcher r1 <|> matcher r2
-matcher (Lit s)        = char s      *> pure ()
+matcher (Alt r1 r2)    = try (matcher r1) <|> matcher r2
+matcher (Lit s)        = char s *> pure ()
 matcher (Concat r1 r2) = matcher r1  *> matcher r2
-matcher (Kleene r)     = matcher r   *> (eof <|> matcher (Kleene r))
+matcher (Kleene r)     = eof <|> (try (matcher r) *> matcher (Kleene r))
 
 -- Parsing
 
@@ -69,7 +89,7 @@ parseRegex :: String -> Either (ParseError Char ()) Regex
 parseRegex = parse' (regex <* eof)
 
 parse' :: Parsec () String Regex -> String -> Either (ParseError (Token String) ()) Regex
-parse' p = parse p "<INLINE>"
+parse' p = parse p "<PARSER>"
 
 specials :: String
 specials = "(*|)\\"
@@ -100,7 +120,8 @@ table = [ [ Postfix (Kleene <$ char '*') ]
 
 -- Simple Props
 
-prop_regex_1, prop_regex_2,
+prop_match_1, prop_match_2,
+  prop_regex_1, prop_regex_2,
   prop_empty_1,
   prop_charParser_1, prop_charParser_2, prop_charParser_3, prop_charParser_4,
   prop_charsOrRegex_1, prop_charsOrRegex_2, prop_charsOrRegex_3, prop_charsOrRegex_4, prop_charsOrRegex_5,
