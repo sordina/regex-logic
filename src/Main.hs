@@ -8,15 +8,12 @@ module Main where
 
 import Data.String
 import Data.Monoid hiding (Alt)
-import Control.Applicative hiding (many, some)
+import Control.Applicative
 import Control.Monad.Logic
 import Text.Megaparsec
 import Text.Megaparsec.Expr
 import Text.Megaparsec.Char as C
 import Data.Either
-import qualified Data.List.NonEmpty as NEL
-import qualified Control.Monad.Combinators.NonEmpty as NE
-import qualified Control.Monad.Combinators as NC
 
 -- Datatypes and Instances
 
@@ -54,6 +51,7 @@ produceAll (Kleene r)     = produceAll $ foldr (Alt . mconcat . flip replicate r
 
 -- Parsing and Matching
 
+parseRegex :: String -> Either (ParseError Char ()) Regex
 parseRegex = parse' (regex <* eof)
 
 match :: Regex -> String -> Bool
@@ -62,19 +60,40 @@ match = undefined
 parse' :: Parsec () String Regex -> String -> Either (ParseError (Token String) ()) Regex
 parse' p = parse p "<INLINE>"
 
-specials     = "(*|)\\" :: String
-escape p     = char '\\'    *> p
-parens p     = NC.between (char '(') (char ')') p
-emptyParser  = pure Empty  <*  eof
-charParser   = Lit         <$> (noneOf specials <|> escape (C.oneOf specials))
+specials :: String
+specials     = "(*|)\\"
 
+escape :: (Token s ~ Char, MonadParsec e s f) => f b -> f b
+escape p = char '\\' *> p
+
+parens :: (Token s ~ Char, MonadParsec e s m) => m a -> m a
+parens p = between (char '(') (char ')') p
+
+emptyParser :: MonadParsec e s f => f Regex
+emptyParser = pure Empty  <*  eof
+
+charParser :: (Token s ~ Char, MonadParsec e s f) => f Regex
+charParser = Lit <$> (noneOf specials <|> escape (C.oneOf specials))
+
+regex :: (Token s ~ Char, MonadParsec e s m) => m Regex
 regex = makeExprParser term table
-term  = emptyParser <|> parens regex <|> try charParser <|> (Concat <$> regex <*> regex)
+
+term :: (Token s ~ Char, MonadParsec e s m) => m Regex
+term = emptyParser <|> parens regex <|> try charParser <|> (Concat <$> regex <*> regex)
+
+table :: (Token s ~ Char, MonadParsec e s m) => [[Operator m Regex]]
 table = [ [ Postfix (Kleene <$ char '*') ]
         , [ InfixL  (Alt    <$ char '|') ]
         ]
 
 -- Simple Props
+--
+prop_regex_1, prop_regex_2,
+  prop_empty_1,
+  prop_charParser_1, prop_charParser_2, prop_charParser_3, prop_charParser_4,
+  prop_charsOrRegex_1, prop_charsOrRegex_2, prop_charsOrRegex_3, prop_charsOrRegex_4, prop_charsOrRegex_5,
+  prop_regexParser_1, prop_regexParser_2, prop_regexParser_5, prop_regexParser_6, prop_regexParser_3, prop_regexParser_4
+  :: Bool
 
 prop_regex_1 = isRight $ observeMany 10 . produceAll <$> parse' (regex <* eof) "a*|(b|c)*"
 prop_regex_2 = isRight $ observeMany 10 . produceAll <$> parse' (regex <* eof) "ab"
