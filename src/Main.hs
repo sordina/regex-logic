@@ -61,7 +61,7 @@ parse' :: Parsec () String Regex -> String -> Either (ParseError (Token String) 
 parse' p = parse p "<INLINE>"
 
 specials :: String
-specials     = "(*|)\\"
+specials = "(*|)\\"
 
 escape :: (Token s ~ Char, MonadParsec e s f) => f b -> f b
 escape p = char '\\' *> p
@@ -69,8 +69,8 @@ escape p = char '\\' *> p
 parens :: (Token s ~ Char, MonadParsec e s m) => m a -> m a
 parens p = between (char '(') (char ')') p
 
-emptyParser :: MonadParsec e s f => f Regex
-emptyParser = pure Empty  <*  eof
+emptyEOF :: MonadParsec e s f => f Regex
+emptyEOF = Empty <$ eof
 
 charParser :: (Token s ~ Char, MonadParsec e s f) => f Regex
 charParser = Lit <$> (noneOf specials <|> escape (C.oneOf specials))
@@ -79,11 +79,12 @@ regex :: (Token s ~ Char, MonadParsec e s m) => m Regex
 regex = makeExprParser term table
 
 term :: (Token s ~ Char, MonadParsec e s m) => m Regex
-term = emptyParser <|> parens regex <|> try charParser <|> (Concat <$> regex <*> regex)
+term = emptyEOF <|> parens regex <|> charParser
 
 table :: (Token s ~ Char, MonadParsec e s m) => [[Operator m Regex]]
 table = [ [ Postfix (Kleene <$ char '*') ]
         , [ InfixL  (Alt    <$ char '|') ]
+        , [ InfixR (pure (\x y -> Concat x y)) ]
         ]
 
 -- Simple Props
