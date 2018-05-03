@@ -49,13 +49,22 @@ produceAll (Alt r1 r2)    = produceAll r1 `interleave` produceAll r2
 produceAll (Concat r1 r2) = (<|>) <$> produceAll r1 <*> produceAll r2
 produceAll (Kleene r)     = produceAll $ foldr (Alt . mconcat . flip replicate r) Empty [0..]
 
--- Parsing and Matching
+-- Matching
+
+matchString :: Regex -> String -> Bool
+matchString r s = isRight $ parse (matcher r) "<MATCHER>" s
+
+matcher :: Regex -> Parsec () String ()
+matcher Empty          = eof
+matcher (Alt r1 r2)    = matcher r1 <|> matcher r2
+matcher (Lit s)        = char s      *> pure ()
+matcher (Concat r1 r2) = matcher r1  *> matcher r2
+matcher (Kleene r)     = matcher r   *> (eof <|> matcher (Kleene r))
+
+-- Parsing
 
 parseRegex :: String -> Either (ParseError Char ()) Regex
 parseRegex = parse' (regex <* eof)
-
-match :: Regex -> String -> Bool
-match = undefined
 
 parse' :: Parsec () String Regex -> String -> Either (ParseError (Token String) ()) Regex
 parse' p = parse p "<INLINE>"
@@ -76,15 +85,15 @@ charParser :: (Token s ~ Char, MonadParsec e s f) => f Regex
 charParser = Lit <$> (noneOf specials <|> escape (C.oneOf specials))
 
 regex :: (Token s ~ Char, MonadParsec e s m) => m Regex
-regex = makeExprParser term table
+regex = emptyEOF <|> makeExprParser term table
 
 term :: (Token s ~ Char, MonadParsec e s m) => m Regex
-term = emptyEOF <|> parens regex <|> charParser
+term = parens regex <|> charParser
 
 table :: (Token s ~ Char, MonadParsec e s m) => [[Operator m Regex]]
 table = [ [ Postfix (Kleene <$ char '*') ]
-        , [ InfixL  (Concat <$ notFollowedBy eof) ]
-        , [ InfixL  (Alt    <$ char '|') ]
+        , [ InfixL  (pure (\x y -> Concat x y)) ]
+        , [ InfixL  (Alt <$ char '|') ]
         ]
 
 -- Simple Props
@@ -110,7 +119,7 @@ prop_charsOrRegex_1 = isRight $ parse' regex "asdf\\|qw\\\\er"
 prop_charsOrRegex_2 = isLeft  $ parse' (regex <* eof) "asdf\\"
 prop_charsOrRegex_3 = isRight $ parse' (regex <* eof) "asdf\\|qw\\\\er"
 prop_charsOrRegex_4 = isLeft  $ parse' (regex <* eof) "asdf\\"
-prop_charsOrRegex_5 = isLeft  $ parse' (regex <* eof) "a|b"
+prop_charsOrRegex_5 = isRight $ parse' (regex <* eof) "a|b"
 
 prop_regexParser_1  = isRight $ parse' (regex <* eof) ""
 prop_regexParser_2  = isRight $ parse' (regex <* eof) "a"
