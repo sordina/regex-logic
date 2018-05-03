@@ -38,7 +38,9 @@ main = do
   mapM_ putStrLn $ observeMany 4  $ produceAll $ (Kleene (Alt "snuggy" "buggy")) <> "bug"
   print $ parseRegex "a|b|c*"
   print $ parseRegex "a|(b|c)*"
-  print $ parseRegex "abc" -- fails
+  print $ parseRegex "abc"
+  print $ flip matchString "a" <$> parseRegex "a|(b|c)*"
+  print $ flip matchString "bbbcbcbcbbbb" <$> parseRegex "a|(b|c)*"
 
 -- Logic Functions
 
@@ -127,3 +129,6 @@ prop_regexParser_5  = isRight $ parse' (regex <* eof) "a*"
 prop_regexParser_6  = isRight $ parse' (regex <* eof) "a|b"
 prop_regexParser_3  = isRight $ parse' (regex <* eof) "ab"
 prop_regexParser_4  = isRight $ parse' (regex <* eof) "abc"
+
+prop_match_1        = (== Right True) $ flip matchString "a" <$> parseRegex "a|(b|c)*"
+prop_match_2        = (== Right True) $ flip matchString "bbbcbcbcbbbb" <$> parseRegex "a|(b|c)*"
