@@ -83,8 +83,8 @@ term = emptyEOF <|> parens regex <|> charParser
 
 table :: (Token s ~ Char, MonadParsec e s m) => [[Operator m Regex]]
 table = [ [ Postfix (Kleene <$ char '*') ]
+        , [ InfixL  (Concat <$ notFollowedBy eof) ]
         , [ InfixL  (Alt    <$ char '|') ]
-        , [ InfixL (pure (\x y -> Concat x y)) ]
         ]
 
 -- Simple Props
