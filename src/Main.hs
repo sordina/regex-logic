@@ -87,7 +87,7 @@ table = [ [ Postfix (Kleene <$ char '*') ]
         ]
 
 -- Simple Props
---
+
 prop_regex_1, prop_regex_2,
   prop_empty_1,
   prop_charParser_1, prop_charParser_2, prop_charParser_3, prop_charParser_4,
@@ -95,8 +95,8 @@ prop_regex_1, prop_regex_2,
   prop_regexParser_1, prop_regexParser_2, prop_regexParser_5, prop_regexParser_6, prop_regexParser_3, prop_regexParser_4
   :: Bool
 
-prop_regex_1 = isRight $ observeMany 10 . produceAll <$> parse' (regex <* eof) "a*|(b|c)*"
-prop_regex_2 = isRight $ observeMany 10 . produceAll <$> parse' (regex <* eof) "ab"
+prop_regex_1        = isRight $ observeMany 10 . produceAll <$> parse' (regex <* eof) "a*|(b|c)*"
+prop_regex_2        = isRight $ observeMany 10 . produceAll <$> parse' (regex <* eof) "ab"
 
 prop_empty_1        = isRight $ parse' regex ""
 
