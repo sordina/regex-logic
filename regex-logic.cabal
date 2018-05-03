@@ -1,0 +1,30 @@
+-- This file has been generated from package.yaml by hpack version 0.20.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 506b2353fa05410b1534d8a0e324167afae7559e3a86253a8efc62225101b108
+
+name:           regex-logic
+version:        0.1.0.0
+category:       Web
+homepage:       https://github.com/githubuser/regex-logic#readme
+author:         Author name here
+maintainer:     example@example.com
+copyright:      2018 Author name here
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+cabal-version:  >= 1.10
+
+extra-source-files:
+    README.md
+
+executable regex-logic
+  main-is: Main.hs
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+  other-modules:
+      Paths_regex_logic
+  default-language: Haskell2010
