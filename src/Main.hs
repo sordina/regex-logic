@@ -19,9 +19,9 @@ main = do
   print $ [r|a|b|c*|]
   print $ [r|a|(b|c)*|]
   print $ [r|abc|]
+  print $ [r| asdf |]
   print $ matchString [r|a|(b|c)*|] "a"
   print $ matchString [r|a|(b|c)*|] "bbbcbcbcbbbb"
-  print $ [r| asdf |]
   print $ matchString [r| asdf |] " asdf "
 
 buggyRegex :: Regex
@@ -53,12 +53,13 @@ prop_charsOrRegex_3 = EOF /= [r|asdf\|qw\\er|]
 prop_charsOrRegex_4 = isLeft  $ parse' (regex <* eof) "asdf\\"
 prop_charsOrRegex_5 = isRight $ parse' (regex <* eof) "a|b"
 
-prop_regexParser_1  = Empty                      == [r||]
-prop_regexParser_2  = Lit 'a'                    == [r|a|]
-prop_regexParser_5  = Kleene (Lit 'a')           ==  [r|a*|]
-prop_regexParser_6  = Alt (Lit 'a') (Lit 'b')    == [r|a|b|]
-prop_regexParser_3  = Concat (Lit 'a') (Lit 'b') == [r|ab|]
-prop_regexParser_4  = Concat (Concat (Lit 'a') (Lit 'b')) (Lit 'c') == [r|abc|]
+prop_regexParser_1  = [r||]    == Empty
+prop_regexParser_7  = [r|.|]   == Any
+prop_regexParser_2  = [r|a|]   == Lit 'a'
+prop_regexParser_5  = [r|a*|]  == Kleene (Lit 'a')
+prop_regexParser_6  = [r|a|b|] == Alt (Lit 'a') (Lit 'b')
+prop_regexParser_3  = [r|ab|]  == Concat (Lit 'a') (Lit 'b')
+prop_regexParser_4  = [r|abc|] == Concat (Concat (Lit 'a') (Lit 'b')) (Lit 'c')
 
 prop_match_1        = matchString [r|a|(b|c)*|] "a"
 prop_match_2        = matchString [r|a|(b|c)*|] "bbbcbcbcbbbb"
