@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeFamilies #-}
 
-module Parse ( regex, parseRegex, parse', charParser ) where
+module Parse ( literal, regex, parseRegex, parse', charParser ) where
 
 import Data
 
@@ -13,6 +13,10 @@ import Text.Megaparsec.Char as C
 
 parseRegex :: String -> Either (ParseError Char ()) Regex
 parseRegex = parse' (regex <* eof)
+
+literal :: String -> Regex
+literal []      = Empty
+literal s@(_:_) = foldr1 Concat $ map Lit s
 
 parse' :: Parsec () String Regex -> String -> Either (ParseError (Token String) ()) Regex
 parse' p = parse p "<PARSER>"

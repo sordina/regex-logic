@@ -39,8 +39,11 @@ prop_match_1, prop_match_2,
   prop_charParser_1, prop_charParser_2, prop_charParser_3, prop_charParser_4,
   prop_charsOrRegex_1, prop_charsOrRegex_2, prop_charsOrRegex_3, prop_charsOrRegex_4, prop_charsOrRegex_5,
   prop_regexParser_concat, prop_regexParser_concat_2, prop_regexParser_kleene, prop_regexParser_lit,
-  prop_regexParser_alt, prop_regexParser_any, prop_regexParser_empty
+  prop_regexParser_alt, prop_regexParser_any, prop_regexParser_empty,
+  prop_literal
   :: Bool
+
+prop_literal        = literal "ab" == Concat (Lit 'a') (Lit 'b')
 
 prop_regex_1        = isRight $ expandMany 10 <$> parse' (regex <* eof) "a*|(b|c)*"
 prop_regex_2        = isRight $ expandMany 10 <$> parse' (regex <* eof) "ab"
