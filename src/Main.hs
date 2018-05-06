@@ -24,7 +24,6 @@ main = do
   print $ [r| asdf |]
   print $ matchString [r| asdf |] " asdf "
 
-
 buggyRegex :: Regex
 buggyRegex = [r|the (snuggy|buggy)*bug|]
 
