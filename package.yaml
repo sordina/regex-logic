@@ -15,6 +15,7 @@ dependencies:
   - base >= 4.7 && < 5
   - megaparsec
   - logict
+  - template-haskell
 
 executables:
   regex-logic:
