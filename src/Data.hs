@@ -10,12 +10,13 @@ import Language.Haskell.TH.Syntax (Lift())
 
 data Regex = Empty              -- The empty string
            | Any                -- Character literals
+           | EOF                -- Character literals
            | Lit Char           -- Character literals
            | Concat Regex Regex -- Concatenation of two regexs
            | Alt    Regex Regex -- Choice between two regexs
            | Kleene Regex       -- The Kleene star
 
-  deriving Lift
+  deriving (Eq, Lift)
 
 instance Show Regex where
   show r = "/" <> pretty r <> "/"
@@ -32,6 +33,7 @@ pretty (Lit s)
   | otherwise                  = [s]
 pretty Empty                   = ""
 pretty Any                     = "."
+pretty EOF                     = "$"
 pretty (Alt (Lit s1) (Lit s2)) = [s1] <> "|" <> [s2]
 pretty (Alt (Lit s1) r2)       = [s1] <> "|(" <> pretty r2 <> ")"
 pretty (Alt r1 (Lit s2))       = "(" <> pretty r1 <> ")|" <> [s2]
@@ -41,4 +43,4 @@ pretty (Kleene (Lit s))        = [s] <> "*"
 pretty (Kleene r)              = "(" <> pretty r <> ")*"
 
 specials :: String
-specials = "(*|).\\"
+specials = "(*|).$\\"

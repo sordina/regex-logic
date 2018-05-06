@@ -9,6 +9,7 @@ import Control.Monad.Logic
 
 produceAll :: MonadLogic f => Regex -> f String
 produceAll Empty          = pure ""
+produceAll EOF            = pure ""
 produceAll Any            = produceAll (foldr1 Alt (map Lit ['a'..'z']))
 produceAll (Lit s)        = pure [s]
 produceAll (Alt r1 r2)    = produceAll r1 `interleave` produceAll r2

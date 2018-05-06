@@ -47,19 +47,19 @@ prop_charParser_2   = isRight $ parse' charParser "\\|"
 prop_charParser_3   = isLeft  $ parse' charParser "|"
 prop_charParser_4   = isLeft  $ parse' (charParser <* eof) "ab"
 
-prop_charsOrRegex_1 = isRight $ parse' regex "asdf\\|qw\\\\er"
-prop_charsOrRegex_2 = isLeft  $ parse' (regex <* eof) "asdf\\"
-prop_charsOrRegex_3 = isRight $ parse' (regex <* eof) "asdf\\|qw\\\\er"
+prop_charsOrRegex_1 = EOF /= [r|asdf\|qw\\er|]
+prop_charsOrRegex_2 = isLeft  $ parseRegex "asdf\\"
+prop_charsOrRegex_3 = EOF /= [r|asdf\|qw\\er|]
 prop_charsOrRegex_4 = isLeft  $ parse' (regex <* eof) "asdf\\"
 prop_charsOrRegex_5 = isRight $ parse' (regex <* eof) "a|b"
 
-prop_regexParser_1  = isRight $ parse' (regex <* eof) ""
-prop_regexParser_2  = isRight $ parse' (regex <* eof) "a"
-prop_regexParser_5  = isRight $ parse' (regex <* eof) "a*"
-prop_regexParser_6  = isRight $ parse' (regex <* eof) "a|b"
-prop_regexParser_3  = isRight $ parse' (regex <* eof) "ab"
-prop_regexParser_4  = isRight $ parse' (regex <* eof) "abc"
+prop_regexParser_1  = Empty                      == [r||]
+prop_regexParser_2  = Lit 'a'                    == [r|a|]
+prop_regexParser_5  = Kleene (Lit 'a')           ==  [r|a*|]
+prop_regexParser_6  = Alt (Lit 'a') (Lit 'b')    == [r|a|b|]
+prop_regexParser_3  = Concat (Lit 'a') (Lit 'b') == [r|ab|]
+prop_regexParser_4  = Concat (Concat (Lit 'a') (Lit 'b')) (Lit 'c') == [r|abc|]
 
-prop_match_1        = (== Right True) $ flip matchString "a" <$> parseRegex "a|(b|c)*"
-prop_match_2        = (== Right True) $ flip matchString "bbbcbcbcbbbb" <$> parseRegex "a|(b|c)*"
+prop_match_1        = matchString [r|a|(b|c)*|] "a"
+prop_match_2        = matchString [r|a|(b|c)*|] "bbbcbcbcbbbb"
 

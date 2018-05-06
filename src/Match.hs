@@ -13,7 +13,8 @@ matchString :: Regex -> String -> Bool
 matchString r s = isRight $ parse (matcher r) "<MATCHER>" s
 
 matcher :: Regex -> Parsec () String ()
-matcher Empty          = eof
+matcher Empty          = return ()
+matcher EOF            = eof
 matcher Any            = () <$ anyChar
 matcher (Alt r1 r2)    = try (matcher r1) <|> matcher r2
 matcher (Lit s)        = () <$ char s
