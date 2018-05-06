@@ -29,18 +29,21 @@ buggyRegex = [r|the (snuggy|buggy)*bug|]
 
 -- Simple Props
 
+prop_roundTrip :: String -> Bool
+prop_roundTrip s = case parseRegex s
+  of Left  _ -> True
+     Right e -> parseRegex (pretty e) == Right e
+
 prop_match_1, prop_match_2,
   prop_regex_1, prop_regex_2,
-  prop_empty_1,
   prop_charParser_1, prop_charParser_2, prop_charParser_3, prop_charParser_4,
   prop_charsOrRegex_1, prop_charsOrRegex_2, prop_charsOrRegex_3, prop_charsOrRegex_4, prop_charsOrRegex_5,
-  prop_regexParser_1, prop_regexParser_2, prop_regexParser_5, prop_regexParser_6, prop_regexParser_3, prop_regexParser_4
+  prop_regexParser_concat, prop_regexParser_concat_2, prop_regexParser_kleene, prop_regexParser_lit,
+  prop_regexParser_alt, prop_regexParser_any, prop_regexParser_empty
   :: Bool
 
 prop_regex_1        = isRight $ expandMany 10 <$> parse' (regex <* eof) "a*|(b|c)*"
 prop_regex_2        = isRight $ expandMany 10 <$> parse' (regex <* eof) "ab"
-
-prop_empty_1        = isRight $ parse' regex ""
 
 prop_charParser_1   = isRight $ parse' charParser "x"
 prop_charParser_2   = isRight $ parse' charParser "\\|"
@@ -53,14 +56,13 @@ prop_charsOrRegex_3 = EOF /= [r|asdf\|qw\\er|]
 prop_charsOrRegex_4 = isLeft  $ parse' (regex <* eof) "asdf\\"
 prop_charsOrRegex_5 = isRight $ parse' (regex <* eof) "a|b"
 
-prop_regexParser_1  = [r||]    == Empty
-prop_regexParser_7  = [r|.|]   == Any
-prop_regexParser_2  = [r|a|]   == Lit 'a'
-prop_regexParser_5  = [r|a*|]  == Kleene (Lit 'a')
-prop_regexParser_6  = [r|a|b|] == Alt (Lit 'a') (Lit 'b')
-prop_regexParser_3  = [r|ab|]  == Concat (Lit 'a') (Lit 'b')
-prop_regexParser_4  = [r|abc|] == Concat (Concat (Lit 'a') (Lit 'b')) (Lit 'c')
+prop_regexParser_empty     = [r||]    == Empty
+prop_regexParser_any       = [r|.|]   == Any
+prop_regexParser_lit       = [r|a|]   == Lit 'a'
+prop_regexParser_kleene    = [r|a*|]  == Kleene (Lit 'a')
+prop_regexParser_alt       = [r|a|b|] == Alt (Lit 'a') (Lit 'b')
+prop_regexParser_concat    = [r|ab|]  == Concat (Lit 'a') (Lit 'b')
+prop_regexParser_concat_2  = [r|abc|] == Concat (Concat (Lit 'a') (Lit 'b')) (Lit 'c')
 
 prop_match_1        = matchString [r|a|(b|c)*|] "a"
 prop_match_2        = matchString [r|a|(b|c)*|] "bbbcbcbcbbbb"
-
