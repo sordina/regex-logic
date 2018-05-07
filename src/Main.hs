@@ -43,16 +43,17 @@ prop_match_1, prop_match_2,
   prop_literal, prop_literal_2
   :: Bool
 
-prop_literal        = literal "ab" == Concat (Lit 'a') (Lit 'b')
-prop_literal_2      = literal ".|" == Concat (Lit '.') (Lit '|')
+prop_literal   = literal "ab" == Concat (Lit 'a') (Lit 'b')
+prop_literal_2 = literal ".|" == Concat (Lit '.') (Lit '|')
 
-prop_regex_1        = isRight $ expandMany 10 <$> parse' (regex <* eof) "a*|(b|c)*"
-prop_regex_2        = isRight $ expandMany 10 <$> parse' (regex <* eof) "ab"
+prop_regex_1 = (==10) $ length $ expandMany 10 [r|a*|(b|c)*|]
+prop_regex_2 = (==2) $ length $ expandAll [r|a|b|]
+prop_regex_3 = (==1) $ length $ expandAll [r|ab|]
 
-prop_charParser_1   = isRight $ parse' charParser "x"
-prop_charParser_2   = isRight $ parse' charParser "\\|"
-prop_charParser_3   = isLeft  $ parse' charParser "|"
-prop_charParser_4   = isLeft  $ parse' (charParser <* eof) "ab"
+prop_charParser_1 = isRight $ parse' charParser "x"
+prop_charParser_2 = isRight $ parse' charParser "\\|"
+prop_charParser_3 = isLeft  $ parse' charParser "|"
+prop_charParser_4 = isLeft  $ parse' (charParser <* eof) "ab"
 
 prop_charsOrRegex_1 = EOF /= [r|asdf\|qw\\er|]
 prop_charsOrRegex_2 = isLeft  $ parseRegex "asdf\\"
@@ -68,5 +69,5 @@ prop_regexParser_alt       = [r|a|b|] == Alt (Lit 'a') (Lit 'b')
 prop_regexParser_concat    = [r|ab|]  == Concat (Lit 'a') (Lit 'b')
 prop_regexParser_concat_2  = [r|abc|] == Concat (Concat (Lit 'a') (Lit 'b')) (Lit 'c')
 
-prop_match_1        = matchString [r|a|(b|c)*|] "a"
-prop_match_2        = matchString [r|a|(b|c)*|] "bbbcbcbcbbbb"
+prop_match_1 = matchString [r|a|(b|c)*|] "a"
+prop_match_2 = matchString [r|a|(b|c)*|] "bbbcbcbcbbbb"

@@ -9,8 +9,8 @@ import Language.Haskell.TH.Syntax (Lift())
 -- Datatypes and Instances
 
 data Regex = Empty              -- The empty string
-           | Any                -- Character literals
-           | EOF                -- Character literals
+           | Any                -- Any Character
+           | EOF                -- End of String
            | Lit Char           -- Character literals
            | Concat Regex Regex -- Concatenation of two regexs
            | Alt    Regex Regex -- Choice between two regexs
