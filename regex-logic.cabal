@@ -2,15 +2,15 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 95f28807941c78aeeac5f2f572ab449fc6f797ef8657fdb3283d0312e7fdf540
+-- hash: dea517659e5a7356b1fba644ad9aa5a6c56317a746b070ec121b6e5f8cb37290
 
 name:           regex-logic
-version:        0.1.0.0
+version:        0.1.0.1
 category:       Web
-homepage:       https://github.com/githubuser/regex-logic#readme
-author:         Author name here
-maintainer:     example@example.com
-copyright:      2018 Author name here
+homepage:       https://github.com/sordina/regex-logic#readme
+author:         Lyndon
+maintainer:     maydwell@gmail.com
+copyright:      2018 Lyndon Maydwell
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -18,6 +18,26 @@ cabal-version:  >= 1.10
 
 extra-source-files:
     README.md
+
+library
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+    , logict
+    , megaparsec
+    , template-haskell
+  exposed-modules:
+      Data
+      Regex
+      Match
+      Generate
+      Parse
+      RegexQQ
+  other-modules:
+      Main
+      Paths_regex_logic
+  default-language: Haskell2010
 
 executable regex-logic
   main-is: Main.hs

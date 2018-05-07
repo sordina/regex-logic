@@ -1,12 +1,10 @@
 name:                regex-logic
-version:             0.1.0.0
-#synopsis:
-#description:
-homepage:            https://github.com/githubuser/regex-logic#readme
+version:             0.1.0.1
+homepage:            https://github.com/sordina/regex-logic#readme
 license:             BSD3
-author:              Author name here
-maintainer:          example@example.com
-copyright:           2018 Author name here
+author:              Lyndon
+maintainer:          maydwell@gmail.com
+copyright:           2018 Lyndon Maydwell
 category:            Web
 extra-source-files:
 - README.md
@@ -16,6 +14,16 @@ dependencies:
   - megaparsec
   - logict
   - template-haskell
+
+library:
+  source-dirs:      src
+  exposed-modules:
+    - Data
+    - Regex
+    - Match
+    - Generate
+    - Parse
+    - RegexQQ
 
 executables:
   regex-logic:

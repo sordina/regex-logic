@@ -35,7 +35,7 @@ prop_roundTrip s = case parseRegex s
      Right e -> parseRegex (pretty e) == Right e
 
 prop_match_1, prop_match_2,
-  prop_regex_1, prop_regex_2,
+  prop_regex_1, prop_regex_2, prop_regex_3,
   prop_charParser_1, prop_charParser_2, prop_charParser_3, prop_charParser_4,
   prop_charsOrRegex_1, prop_charsOrRegex_2, prop_charsOrRegex_3, prop_charsOrRegex_4, prop_charsOrRegex_5,
   prop_regexParser_concat, prop_regexParser_concat_2, prop_regexParser_kleene, prop_regexParser_lit,
