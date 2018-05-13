@@ -13,20 +13,29 @@ type Edge a = (Node a, Node a)
 type Node a = (Int, a)
 
 main :: IO ()
-main = putStrLn $ exportViaShow $ toDfa [Q.r|hello world|]
+main = do
+  putStrLn ""
+  print $ toDfa [Q.r|hello world|]
+  putStrLn ""
+  putStrLn $ exportViaShow $ toDfa [Q.r|hello world|]
+  putStrLn ""
+  print $ toDfa [Q.r|abcdefg|]
+  putStrLn ""
+  putStrLn $ exportViaShow $ toDfa [Q.r|abcdefg|]
 
 matchString :: Regex -> String -> Bool
 matchString r s = or $ dfaMatch g (map Just s) <$> initial g where g = toDfa r
 
 -- We use Maybe in order to support Any with Nothing and Chars with Just
+
 toDfa :: Regex -> DFA (Maybe Char)
 toDfa Empty          = empty
 toDfa EOF            = empty
 toDfa (Lit s)        = vertex (0, Just s)
 toDfa Any            = vertex (0, Nothing)
-toDfa (Alt r1 r2)    = toDfa r1 `overlay` bump ((*2) . succ) (toDfa r2)
-toDfa (Concat r1 r2) = toDfa r1 `bridge`  bump ((*2) . succ) (toDfa r2)
-toDfa (Kleene r)     = bridge rd rd where rd = toDfa r
+toDfa (Alt r1 r2)    = simplify $ toDfa r1 `overlay` toDfa r2
+toDfa (Concat r1 r2) = simplify $ toDfa r1 `bridge`  toDfa r2
+toDfa (Kleene r)     = simplify $ bridge rd rd where rd = toDfa r
 
 -- Matching
 

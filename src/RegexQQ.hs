@@ -3,7 +3,6 @@
 
 module RegexQQ where
 
-import Data
 import Parse
 
 import Language.Haskell.TH
