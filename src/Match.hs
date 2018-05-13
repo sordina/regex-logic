@@ -54,6 +54,20 @@ main = do
   putStrLn "/abcdefg/ =~ abcdefgh"
   print $ matchString [Q.r|abcdefg|] "abcdefgh"
 
+prop_match_1, prop_match_2, prop_match_3, prop_match_4, prop_match_5,
+  prop_match_6, prop_match_7, prop_match_8, prop_match_9, prop_match_10 :: Bool
+
+prop_match_1  = not $ matchString [Q.r|a|b|] "ab"
+prop_match_2  = matchString [Q.r|a|b|] "a"
+prop_match_3  = matchString [Q.r|a|b|] "b"
+prop_match_4  = not $ matchString [Q.r|a|b|] "c"
+prop_match_5  = not $ matchString [Q.r|a|b|] ""
+prop_match_6  = matchString [Q.r||] ""
+prop_match_7  = matchString [Q.r|a|] "a"
+prop_match_8  = matchString [Q.r|ab|] "ab"
+prop_match_9  = matchString [Q.r|abcdefg|] "abcdefg"
+prop_match_10 = not $ matchString [Q.r|abcdefg|] "abcdefgh"
+
 prop_matches_generated_elements :: String -> Bool
 prop_matches_generated_elements s = case r
     of Left  _ -> True
@@ -84,7 +98,7 @@ toDfa (Kleene r)     = simplify $ bridge rd rd where rd = toDfa r
 -- Matching
 
 dfaMatch :: (Eq a, Ord a) => DFA a -> [a] -> Node a -> Bool
-dfaMatch _   []     _ = False
+dfaMatch _   []     _ = False -- We have a node, so we must have something to match
 dfaMatch dfa [x]    n = isFinal dfa n && x == snd n
 dfaMatch dfa (x:xs) n = currentMatch && restMatch
   where
