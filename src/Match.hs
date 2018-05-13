@@ -3,6 +3,8 @@
 module Match where
 
 import Data
+import Parse
+import Generate
 import Control.Arrow (first)
 import Algebra.Graph hiding (Empty)
 import Algebra.Graph.Export.Dot
@@ -43,13 +45,24 @@ main = do
   print $ matchString [Q.r|a|b|] ""
   putStrLn "// =~ ''"
   print $ matchString [Q.r||] ""
+  putStrLn "/a/ =~ a"
   print $ matchString [Q.r|a|] "a"
+  putStrLn "/ab/ =~ ab"
   print $ matchString [Q.r|ab|] "ab"
+  putStrLn "/abcdefg/ =~ abcdefg"
   print $ matchString [Q.r|abcdefg|] "abcdefg"
+  putStrLn "/abcdefg/ =~ abcdefgh"
   print $ matchString [Q.r|abcdefg|] "abcdefgh"
 
+prop_matches_generated_elements :: String -> Bool
+prop_matches_generated_elements s = case r
+    of Left  _ -> True
+       Right x -> all (matchString x) (expandMany 10 x)
+  where
+  r = parseRegex s
+
 matchString :: Regex -> String -> Bool
-matchString r s | isEmpty i = True
+matchString r s | null s && isEmpty i = True
                 | otherwise = or $ dfaMatch g (map Just s) <$> i
   where
   i = initial g
@@ -73,7 +86,10 @@ toDfa (Kleene r)     = simplify $ bridge rd rd where rd = toDfa r
 dfaMatch :: (Eq a, Ord a) => DFA a -> [a] -> Node a -> Bool
 dfaMatch _   []     _ = False
 dfaMatch dfa [x]    n = isFinal dfa n && x == snd n
-dfaMatch dfa (x:xs) n = or $ dfaMatch dfa xs <$> dfaTraverse dfa n x
+dfaMatch dfa (x:xs) n = currentMatch && restMatch
+  where
+  currentMatch = dfaMatch dfa [x] n
+  restMatch    = or $ dfaMatch dfa xs <$> dfaTraverse dfa n x
 
 dfaTraverse :: (Eq a, Ord a) => DFA a -> Node a -> a -> [ Node a ]
 dfaTraverse dfa state a = map snd $ filter (fromSymbol a & elem state) (edgeList dfa)
