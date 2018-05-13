@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: dea517659e5a7356b1fba644ad9aa5a6c56317a746b070ec121b6e5f8cb37290
+-- hash: d32f49152e6674071b1fc0b9e4ebdeb0100921d3c1687f6e9a1059d10d3bfcf5
 
 name:           regex-logic
 version:        0.1.0.1
@@ -23,7 +23,8 @@ library
   hs-source-dirs:
       src
   build-depends:
-      base >=4.7 && <5
+      algebraic-graphs
+    , base >=4.7 && <5
     , logict
     , megaparsec
     , template-haskell
@@ -44,7 +45,8 @@ executable regex-logic
   hs-source-dirs:
       src
   build-depends:
-      base >=4.7 && <5
+      algebraic-graphs
+    , base >=4.7 && <5
     , logict
     , megaparsec
     , template-haskell

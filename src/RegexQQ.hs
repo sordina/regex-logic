@@ -3,7 +3,8 @@
 
 module RegexQQ where
 
-import Regex
+import Data
+import Parse
 
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote
