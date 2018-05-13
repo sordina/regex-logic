@@ -15,32 +15,63 @@ type Node a = (Int, a)
 main :: IO ()
 main = do
   putStrLn ""
+  print $ [Q.r|hello world|]
   print $ toDfa [Q.r|hello world|]
   putStrLn ""
   putStrLn $ exportViaShow $ toDfa [Q.r|hello world|]
   putStrLn ""
+  print $ [Q.r|abcdefg|]
   print $ toDfa [Q.r|abcdefg|]
   putStrLn ""
   putStrLn $ exportViaShow $ toDfa [Q.r|abcdefg|]
+  putStrLn ""
+  print $ [Q.r|a|b|]
+  print $ toDfa [Q.r|a|b|]
+  putStrLn ""
+  putStrLn $ exportViaShow $ toDfa [Q.r|a|b|]
+  putStrLn ""
+  print $ [Q.r|ab|]
+  print $ toDfa [Q.r|ab|]
+  putStrLn ""
+  putStrLn $ exportViaShow $ toDfa [Q.r|ab|]
+  putStrLn ""
+  putStrLn "/a|b/ =~ ab a b c ''"
+  print $ matchString [Q.r|a|b|] "ab"
+  print $ matchString [Q.r|a|b|] "a"
+  print $ matchString [Q.r|a|b|] "b"
+  print $ matchString [Q.r|a|b|] "c"
+  print $ matchString [Q.r|a|b|] ""
+  putStrLn "// =~ ''"
+  print $ matchString [Q.r||] ""
+  print $ matchString [Q.r|a|] "a"
+  print $ matchString [Q.r|ab|] "ab"
+  print $ matchString [Q.r|abcdefg|] "abcdefg"
+  print $ matchString [Q.r|abcdefg|] "abcdefgh"
 
 matchString :: Regex -> String -> Bool
-matchString r s = or $ dfaMatch g (map Just s) <$> initial g where g = toDfa r
+matchString r s | isEmpty i = True
+                | otherwise = or $ dfaMatch g (map Just s) <$> i
+  where
+  i = initial g
+  g = toDfa r
 
 -- We use Maybe in order to support Any with Nothing and Chars with Just
+-- We use a pair of (Int, Char) in order to allow the regex to include the
+-- same character in multiple discrete places.
 
 toDfa :: Regex -> DFA (Maybe Char)
 toDfa Empty          = empty
 toDfa EOF            = empty
 toDfa (Lit s)        = vertex (0, Just s)
 toDfa Any            = vertex (0, Nothing)
-toDfa (Alt r1 r2)    = simplify $ toDfa r1 `overlay` toDfa r2
-toDfa (Concat r1 r2) = simplify $ toDfa r1 `bridge`  toDfa r2
+toDfa (Alt r1 r2)    = simplify $ bump succ (toDfa r1) `overlay` toDfa r2
+toDfa (Concat r1 r2) = simplify $ bump succ (toDfa r1) `bridge`  toDfa r2
 toDfa (Kleene r)     = simplify $ bridge rd rd where rd = toDfa r
 
 -- Matching
 
 dfaMatch :: (Eq a, Ord a) => DFA a -> [a] -> Node a -> Bool
-dfaMatch dfa []     n = isFinal dfa n
+dfaMatch _   []     _ = False
 dfaMatch dfa [x]    n = isFinal dfa n && x == snd n
 dfaMatch dfa (x:xs) n = or $ dfaMatch dfa xs <$> dfaTraverse dfa n x
 
