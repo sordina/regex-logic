@@ -24,17 +24,14 @@ main = do
   print $ matchString [r|a|(b|c)*|] "bbbcbcbcbbbb"
   print $ matchString [r| asdf |] " asdf "
 
-buggyRegex :: Regex
-buggyRegex = [r|the (snuggy|buggy)*bug|]
-
 -- Simple Props
 
-prop_roundTrip :: String -> Bool
+prop_genmatch, prop_roundTrip :: String -> Bool
 prop_roundTrip s = case parseRegex s
   of Left  _ -> True
      Right e -> parseRegex (pretty e) == Right e
 
-prop_match_1, prop_match_2,
+prop_match_1, prop_match_2, prop_match_3, prop_match_4, prop_match_5,
   prop_regex_1, prop_regex_2, prop_regex_3,
   prop_charParser_1, prop_charParser_2, prop_charParser_3, prop_charParser_4,
   prop_charsOrRegex_1, prop_charsOrRegex_2, prop_charsOrRegex_3, prop_charsOrRegex_4, prop_charsOrRegex_5,
@@ -42,6 +39,17 @@ prop_match_1, prop_match_2,
   prop_regexParser_alt, prop_regexParser_any, prop_regexParser_empty,
   prop_literal, prop_literal_2
   :: Bool
+
+prop_genmatch s = case (\g -> all (matchString g) (expandMany 10 g)) <$> parseRegex s
+  of Left  _ -> True
+     Right b -> b
+
+prop_match_1 = matchString [r|a|(b|c)*|] "a"
+prop_match_2 = matchString [r|a|(b|c)*|] "bbbcbcbcbbbb"
+prop_match_3 = matchString [r|a(b|c)*|] "abbbcbcbcbbbb"
+prop_match_4 = matchString [r|a(b|c)*|] "a"
+prop_match_5 = matchString [r|the (snuggy|buggy)*bug|] "the snuggybug"
+prop_match_6 = matchString [r|a*a|] "a"
 
 prop_literal   = literal "ab" == Concat (Lit 'a') (Lit 'b')
 prop_literal_2 = literal ".|" == Concat (Lit '.') (Lit '|')
@@ -65,9 +73,7 @@ prop_regexParser_empty     = [r||]    == Empty
 prop_regexParser_any       = [r|.|]   == Any
 prop_regexParser_lit       = [r|a|]   == Lit 'a'
 prop_regexParser_kleene    = [r|a*|]  == Kleene (Lit 'a')
+prop_regexParser_kleene_2  = [r|a*a|] == Concat (Kleene (Lit 'a')) (Lit 'a')
 prop_regexParser_alt       = [r|a|b|] == Alt (Lit 'a') (Lit 'b')
 prop_regexParser_concat    = [r|ab|]  == Concat (Lit 'a') (Lit 'b')
 prop_regexParser_concat_2  = [r|abc|] == Concat (Concat (Lit 'a') (Lit 'b')) (Lit 'c')
-
-prop_match_1 = matchString [r|a|(b|c)*|] "a"
-prop_match_2 = matchString [r|a|(b|c)*|] "bbbcbcbcbbbb"
