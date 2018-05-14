@@ -1,71 +1,146 @@
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE TupleSections #-}
 
-module Match where
+module Match
+  where
 
 import Data
 import Parse
 import Generate
-import Control.Arrow (first)
+import Control.Monad.State
 import Algebra.Graph hiding (Empty)
 import Algebra.Graph.Export.Dot
 import qualified RegexQQ as Q
 
-type DFA  a = Graph (Node a)
-type Edge a = (Node a, Node a)
-type Node a = (Int, a)
+type DFA   = Graph Rec
+type Node  = Rec
+type Edge  = (Rec, Rec)
+type ReDFA = DFA
+data Rec   = R { ini :: Bool, fin :: Bool, skp :: Bool, tok :: Char, idi :: Int } deriving (Eq, Ord, Show)
+
+setIni :: Bool -> Rec -> Rec
+setIni x r = r { ini = x }
+setFin :: Bool -> Rec -> Rec
+setFin x r = r { fin = x }
+setSkp :: Bool -> Rec -> Rec
+setSkp x r = r { skp = x }
+setTok :: Char -> Rec -> Rec
+setTok x r = r { tok = x }
+
+mkAny :: Int -> Rec
+mkAny = R True True True '.'
+mkLit :: Char -> Int -> Rec
+mkLit = R True True False
+
+debugRegex :: Regex -> IO ()
+debugRegex a = do
+  putStrLn ""
+  print a
+  print $ toDfa a
+  putStrLn ""
+  putStrLn $ exportViaShow $ toDfa a
 
 main :: IO ()
 main = do
-  putStrLn ""
-  print $ [Q.r|hello world|]
-  print $ toDfa [Q.r|hello world|]
-  putStrLn ""
-  putStrLn $ exportViaShow $ toDfa [Q.r|hello world|]
-  putStrLn ""
-  print $ [Q.r|abcdefg|]
-  print $ toDfa [Q.r|abcdefg|]
-  putStrLn ""
-  putStrLn $ exportViaShow $ toDfa [Q.r|abcdefg|]
-  putStrLn ""
-  print $ [Q.r|a|b|]
-  print $ toDfa [Q.r|a|b|]
-  putStrLn ""
-  putStrLn $ exportViaShow $ toDfa [Q.r|a|b|]
-  putStrLn ""
-  print $ [Q.r|ab|]
-  print $ toDfa [Q.r|ab|]
-  putStrLn ""
-  putStrLn $ exportViaShow $ toDfa [Q.r|ab|]
-  putStrLn ""
-  putStrLn "/a|b/ =~ ab a b c ''"
-  print $ matchString [Q.r|a|b|] "ab"
-  print $ matchString [Q.r|a|b|] "a"
-  print $ matchString [Q.r|a|b|] "b"
-  print $ matchString [Q.r|a|b|] "c"
-  print $ matchString [Q.r|a|b|] ""
-  putStrLn "// =~ ''"
-  print $ matchString [Q.r||] ""
-  putStrLn "/a/ =~ a"
-  print $ matchString [Q.r|a|] "a"
-  putStrLn "/ab/ =~ ab"
-  print $ matchString [Q.r|ab|] "ab"
-  putStrLn "/abcdefg/ =~ abcdefg"
-  print $ matchString [Q.r|abcdefg|] "abcdefg"
-  putStrLn "/abcdefg/ =~ abcdefgh"
-  print $ matchString [Q.r|abcdefg|] "abcdefgh"
+  debugRegex [Q.r|hello world|]
+  debugRegex [Q.r|abcdefg|]
+  debugRegex [Q.r|aa|]
+  debugRegex [Q.r|a*|]
+  debugRegex [Q.r|x(abc)*|]
+  debugRegex [Q.r|a|b|]
+  debugRegex [Q.r|ab|]
+
+toDfa :: Regex -> ReDFA
+toDfa r = evalState (toDfaM r) 0
+
+toDfaM :: Regex -> State Int ReDFA
+toDfaM Empty          = pure empty
+toDfaM EOF            = pure empty
+toDfaM Any            = vertex . mkAny   <$> bump
+toDfaM (Lit s)        = vertex . mkLit s <$> bump
+toDfaM (Alt r1 r2)    = super            <$> toDfaM r1 <*> toDfaM r2
+toDfaM (Concat r1 r2) = bridge r1 r2     <$> toDfaM r1 <*> toDfaM r2
+toDfaM (Kleene r)     = loop             <$> toDfaM r
+
+clean :: Regex -> Bool -- Check if a regex can be completely vacuous
+clean Empty        = True
+clean EOF          = True
+clean Any          = False
+clean (Lit _)      = False
+clean (Kleene _)   = True
+clean (Alt l r)    = clean l || clean r
+clean (Concat a b) = clean a && clean b
+
+bar :: Bool -> Node -> Node
+bar True  = id
+bar False = setIni False
+
+trap :: Bool -> Node -> Node
+trap True  = id
+trap False = setFin False
+
+super :: ReDFA -> ReDFA -> ReDFA
+super a b = simplify (overlay a b)
+
+bump :: (Enum b, MonadState b f) => f b
+bump = modify succ *> get
+
+bridge :: Regex -> Regex -> ReDFA -> ReDFA -> ReDFA
+bridge r1 r2 a b = simplify $ overlays [trapper <$> a, barrier <$> b, c]
+  where
+    c       = (trapper <$> final a) `connect` (barrier <$> initial b)
+    trapper = trap (clean r2)
+    barrier = bar  (clean r1)
+
+loop :: ReDFA -> ReDFA
+loop a = simplify $ overlays [a, c]
+  where
+  c = final a `connect` initial a
+
+final :: ReDFA -> ReDFA
+final a = vertices $ filter fin (vertexList a)
+
+initial :: ReDFA -> ReDFA
+initial a = vertices $ filter ini (vertexList a)
+
+matchString :: Regex -> String -> Bool
+matchString r s | null s && isEmpty i = True
+                | otherwise = or $ dfaMatch g s <$> i
+  where
+  i = initial g
+  g = toDfa r
+
+dfaMatch :: DFA -> String -> Node -> Bool
+dfaMatch _   []     _ = False -- We have a node, so we must have something to match
+dfaMatch _   [x]    n = fin n && (x == tok n || skp n)
+dfaMatch dfa (x:xs) n = currentMatch && restMatch
+  where
+  currentMatch = skp n || x == tok n
+  restMatch    = or $ dfaMatch dfa xs <$> dfaTraverse dfa n x
+
+dfaTraverse :: DFA -> Node -> Char -> [ Node ]
+dfaTraverse dfa n c
+  | skp n     = map snd pairs
+  | otherwise = map snd $ filter (fromSymbol c) pairs
+  where
+  pairs = filter ((== n) . fst) (edgeList dfa)
+
+fromSymbol :: Char -> Edge -> Bool
+fromSymbol a (n,_) = a == tok n
 
 prop_match_1, prop_match_2, prop_match_3, prop_match_4, prop_match_5,
   prop_match_6, prop_match_7, prop_match_8, prop_match_9, prop_match_10 :: Bool
 
 prop_match_1  = not $ matchString [Q.r|a|b|] "ab"
-prop_match_2  = matchString [Q.r|a|b|] "a"
-prop_match_3  = matchString [Q.r|a|b|] "b"
+prop_match_2  =       matchString [Q.r|a|b|] "a"
+prop_match_3  =       matchString [Q.r|a|b|] "b"
 prop_match_4  = not $ matchString [Q.r|a|b|] "c"
 prop_match_5  = not $ matchString [Q.r|a|b|] ""
-prop_match_6  = matchString [Q.r||] ""
-prop_match_7  = matchString [Q.r|a|] "a"
-prop_match_8  = matchString [Q.r|ab|] "ab"
-prop_match_9  = matchString [Q.r|abcdefg|] "abcdefg"
+prop_match_6  =       matchString [Q.r||] ""
+prop_match_7  =       matchString [Q.r|a|] "a"
+prop_match_8  =       matchString [Q.r|ab|] "ab"
+prop_match_9  =       matchString [Q.r|abcdefg|] "abcdefg"
 prop_match_10 = not $ matchString [Q.r|abcdefg|] "abcdefgh"
 
 prop_matches_generated_elements :: String -> Bool
@@ -74,70 +149,3 @@ prop_matches_generated_elements s = case r
        Right x -> all (matchString x) (expandMany 10 x)
   where
   r = parseRegex s
-
-matchString :: Regex -> String -> Bool
-matchString r s | null s && isEmpty i = True
-                | otherwise = or $ dfaMatch g (map Just s) <$> i
-  where
-  i = initial g
-  g = toDfa r
-
--- We use Maybe in order to support Any with Nothing and Chars with Just
--- We use a pair of (Int, Char) in order to allow the regex to include the
--- same character in multiple discrete places.
-
-toDfa :: Regex -> DFA (Maybe Char)
-toDfa Empty          = empty
-toDfa EOF            = empty
-toDfa (Lit s)        = vertex (0, Just s)
-toDfa Any            = vertex (0, Nothing)
-toDfa (Alt r1 r2)    = simplify $ bump succ (toDfa r1) `overlay` toDfa r2
-toDfa (Concat r1 r2) = simplify $ bump succ (toDfa r1) `bridge`  toDfa r2
-toDfa (Kleene r)     = simplify $ bridge rd rd where rd = toDfa r
-
--- Matching
-
-dfaMatch :: (Eq a, Ord a) => DFA a -> [a] -> Node a -> Bool
-dfaMatch _   []     _ = False -- We have a node, so we must have something to match
-dfaMatch dfa [x]    n = isFinal dfa n && x == snd n
-dfaMatch dfa (x:xs) n = currentMatch && restMatch
-  where
-  currentMatch = dfaMatch dfa [x] n
-  restMatch    = or $ dfaMatch dfa xs <$> dfaTraverse dfa n x
-
-dfaTraverse :: (Eq a, Ord a) => DFA a -> Node a -> a -> [ Node a ]
-dfaTraverse dfa state a = map snd $ filter (fromSymbol a & elem state) (edgeList dfa)
-  where
-  (f & g) x = f x && g x
-
-fromSymbol :: Eq a =>  a -> Edge a -> Bool
-fromSymbol a ((_,x),_) = a == x
-
-isFinal :: (Eq a, Ord a) => DFA a -> Node a -> Bool
-isFinal d n | hasVertex n (final d) = True
-            | otherwise             = False
-
--- Graph Stuff
-
-bridge :: (Eq a, Ord a) => Graph a -> Graph a -> Graph a
-bridge a b = overlays [a,b,c]
-  where
-  c = final a `connect` initial b
-
-initial :: Ord a => Graph a -> Graph a
-initial a = vertices (vl // el)
-  where
-  vl = vertexList a
-  el = map snd $ edgeList a
-
-final :: Ord a => Graph a -> Graph a
-final a = vertices (vl // el)
-  where
-  vl = vertexList a
-  el = map fst $ edgeList a
-
-bump :: (Int -> Int) -> DFA a -> DFA a
-bump f d = first f <$> d
-
-(//) :: Eq a => [a] -> [a] -> [a]
-xs // ys = filter (not . flip elem ys) xs

@@ -15,6 +15,7 @@ data Regex = Empty              -- The empty string
            | Concat Regex Regex -- Concatenation of two regexs
            | Alt    Regex Regex -- Choice between two regexs
            | Kleene Regex       -- The Kleene star
+           -- | Enum String        -- Character literals
 
   deriving (Eq, Lift)
 
