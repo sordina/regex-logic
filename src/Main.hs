@@ -6,23 +6,63 @@ module Main where
 import Regex
 import RegexQQ
 
+import System.Exit
+import System.Environment
 import Data.Monoid hiding (Alt, Any)
-import Text.Megaparsec
+import Text.Megaparsec hiding (match)
 import Data.Either
+import Data.Maybe
+import Data.List (intercalate)
 
 -- Top Level Test
 
 main :: IO ()
-main = do
+main = getArgs >>= go
+
+go :: [String] -> IO ()
+go ("match"    : xs) = runMatch xs
+go ("generate" : xs) = runGenerate xs
+go _                 = help >> exitFailure
+
+help :: IO ()
+help = putStrLn "Usage: regex-logic (match | generate) REGEX ..."
+
+runMatch :: [String] -> IO ()
+runMatch []      = helpMatch
+runMatch (x: xs) = case (parseRegex x, xs)
+  of (Left  e,  _) -> error (show e)
+     (Right e, []) -> interact (unlines . mapMaybe (grep e) . lines)
+     (Right e, ys) -> print $ map (match e) ys
+
+helpMatch :: IO ()
+helpMatch = putStrLn "Usage: regex-logic match REGEX STRING*"
+
+grep :: Regex -> String -> Maybe String
+grep e l | match e l = Just l
+         | otherwise = Nothing
+
+runGenerate :: [String] -> IO ()
+runGenerate [] = helpGenerate >> exitFailure
+runGenerate rs = case parseRegex (intercalate "|" $ map parenthesise rs)
+  of Left  e -> error (show e)
+     Right e -> mapM_ putStrLn (expandAll e)
+
+helpGenerate :: IO ()
+helpGenerate = putStrLn "Usage: regex-logic generate REGEX*"
+
+parenthesise :: String -> String
+parenthesise s = "(" ++ s ++ ")"
+
+bla = do
   print $ expandMany          14 $ (Alt (Kleene (Lit 'a')) (Lit 'b'))
   mapM_ putStrLn $ expandMany 4  $ (Kleene (Alt "snuggy" "buggy")) <> "bug"
   print $ [r|a|b|c*|]
   print $ [r|a|(b|c)*|]
   print $ [r|abc|]
   print $ [r| asdf |]
-  print $ matchString [r|a|(b|c)*|] "a"
-  print $ matchString [r|a|(b|c)*|] "bbbcbcbcbbbb"
-  print $ matchString [r| asdf |] " asdf "
+  print $ match [r|a|(b|c)*|] "a"
+  print $ match [r|a|(b|c)*|] "bbbcbcbcbbbb"
+  print $ match [r| asdf |] " asdf "
 
 -- Simple Props
 
@@ -40,16 +80,16 @@ prop_match_1, prop_match_2, prop_match_3, prop_match_4, prop_match_5,
   prop_literal, prop_literal_2
   :: Bool
 
-prop_genmatch s = case (\g -> all (matchString g) (expandMany 10 g)) <$> parseRegex s
+prop_genmatch s = case (\g -> all (match g) (expandMany 10 g)) <$> parseRegex s
   of Left  _ -> True
      Right b -> b
 
-prop_match_1 = matchString [r|a|(b|c)*|] "a"
-prop_match_2 = matchString [r|a|(b|c)*|] "bbbcbcbcbbbb"
-prop_match_3 = matchString [r|a(b|c)*|] "abbbcbcbcbbbb"
-prop_match_4 = matchString [r|a(b|c)*|] "a"
-prop_match_5 = matchString [r|the (snuggy|buggy)*bug|] "the snuggybug"
-prop_match_6 = matchString [r|a*a|] "a"
+prop_match_1 = match [r|a|(b|c)*|] "a"
+prop_match_2 = match [r|a|(b|c)*|] "bbbcbcbcbbbb"
+prop_match_3 = match [r|a(b|c)*|] "abbbcbcbcbbbb"
+prop_match_4 = match [r|a(b|c)*|] "a"
+prop_match_5 = match [r|the (snuggy|buggy)*bug|] "the snuggybug"
+prop_match_6 = match [r|a*a|] "a"
 
 prop_literal   = literal "ab" == Concat (Lit 'a') (Lit 'b')
 prop_literal_2 = literal ".|" == Concat (Lit '.') (Lit '|')

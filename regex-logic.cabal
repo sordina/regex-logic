@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d32f49152e6674071b1fc0b9e4ebdeb0100921d3c1687f6e9a1059d10d3bfcf5
+-- hash: c9fa8a6804440f68bd8dfc7e03681d6103a67216b2522998acfef46b087bce8e
 
 name:           regex-logic
 version:        0.1.0.1
@@ -27,6 +27,7 @@ library
     , base >=4.7 && <5
     , logict
     , megaparsec
+    , mtl
     , template-haskell
   exposed-modules:
       Data
@@ -49,6 +50,7 @@ executable regex-logic
     , base >=4.7 && <5
     , logict
     , megaparsec
+    , mtl
     , template-haskell
   other-modules:
       Data

@@ -15,6 +15,7 @@ dependencies:
   - logict
   - template-haskell
   - algebraic-graphs
+  - mtl
 
 library:
   source-dirs:      src

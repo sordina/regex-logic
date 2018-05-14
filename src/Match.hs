@@ -23,10 +23,6 @@ setIni :: Bool -> Rec -> Rec
 setIni x r = r { ini = x }
 setFin :: Bool -> Rec -> Rec
 setFin x r = r { fin = x }
-setSkp :: Bool -> Rec -> Rec
-setSkp x r = r { skp = x }
-setTok :: Char -> Rec -> Rec
-setTok x r = r { tok = x }
 
 mkAny :: Int -> Rec
 mkAny = R True True True '.'
