@@ -7,12 +7,8 @@ module Match
   where
 
 import Data
-import Parse
-import Generate
 import Control.Monad.State
 import Algebra.Graph hiding (Empty)
-import Algebra.Graph.Export.Dot
-import qualified RegexQQ as Q
 
 type DFA   = Graph Rec
 type Node  = Rec
@@ -29,24 +25,6 @@ mkAny = R True True True '.'
 
 mkLit :: Char -> Int -> Rec
 mkLit = R True True False
-
-debugRegex :: Regex -> IO ()
-debugRegex a = do
-  putStrLn ""
-  print a
-  print $ toDFA a
-  putStrLn ""
-  putStrLn $ exportViaShow $ toDFA a
-
-main :: IO ()
-main = do
-  debugRegex [Q.r|hello world|]
-  debugRegex [Q.r|abcdefg|]
-  debugRegex [Q.r|aa|]
-  debugRegex [Q.r|a*|]
-  debugRegex [Q.r|x(abc)*|]
-  debugRegex [Q.r|a|b|]
-  debugRegex [Q.r|ab|]
 
 toDFA :: Regex -> DFA
 toDFA r = evalState (toDfaM r) 0
@@ -126,24 +104,3 @@ dfaTraverse dfa n c
 
 fromSymbol :: Char -> Edge -> Bool
 fromSymbol a (n,_) = a == tok n
-
-prop_match_1, prop_match_2, prop_match_3, prop_match_4, prop_match_5,
-  prop_match_6, prop_match_7, prop_match_8, prop_match_9, prop_match_10 :: Bool
-
-prop_match_1  = not $ match [Q.r|a|b|] "ab"
-prop_match_2  =       match [Q.r|a|b|] "a"
-prop_match_3  =       match [Q.r|a|b|] "b"
-prop_match_4  = not $ match [Q.r|a|b|] "c"
-prop_match_5  = not $ match [Q.r|a|b|] ""
-prop_match_6  =       match [Q.r||] ""
-prop_match_7  =       match [Q.r|a|] "a"
-prop_match_8  =       match [Q.r|ab|] "ab"
-prop_match_9  =       match [Q.r|abcdefg|] "abcdefg"
-prop_match_10 = not $ match [Q.r|abcdefg|] "abcdefgh"
-
-prop_matches_generated_elements :: String -> Bool
-prop_matches_generated_elements s = case r
-    of Left  _ -> True
-       Right x -> all (match x) (expandMany 10 x)
-  where
-  r = parseRegex s

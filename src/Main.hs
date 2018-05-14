@@ -34,6 +34,7 @@ runDFA :: [String] -> IO ()
 runDFA []   = helpMatch
 runDFA (xs) = mapM_ (printDFA . fmap (exportViaShow . toDFA) . parseRegex) xs
 
+printDFA :: Show a => Either a String -> IO ()
 printDFA (Left x) = print x
 printDFA (Right x) = putStrLn x
 
@@ -73,6 +74,7 @@ helpGenerate = putStrLn "Usage: regex-logic generate REGEX*"
 parenthesise :: String -> String
 parenthesise s = "(" ++ s ++ ")"
 
+bla :: IO ()
 bla = do
   print $ expandMany          14 $ (Alt (Kleene (Lit 'a')) (Lit 'b'))
   mapM_ putStrLn $ expandMany 4  $ (Kleene (Alt "snuggy" "buggy")) <> "bug"
@@ -83,6 +85,22 @@ bla = do
   print $ match [r|a|(b|c)*|] "a"
   print $ match [r|a|(b|c)*|] "bbbcbcbcbbbb"
   print $ match [r| asdf |] " asdf "
+
+  debugRegex [r|hello world|]
+  debugRegex [r|abcdefg|]
+  debugRegex [r|aa|]
+  debugRegex [r|a*|]
+  debugRegex [r|x(abc)*|]
+  debugRegex [r|a|b|]
+  debugRegex [r|ab|]
+
+debugRegex :: Regex -> IO ()
+debugRegex a = do
+  putStrLn ""
+  print a
+  print $ toDFA a
+  putStrLn ""
+  putStrLn $ exportViaShow $ toDFA a
 
 -- Simple Props
 
@@ -97,7 +115,7 @@ prop_match_1, prop_match_2, prop_match_3, prop_match_4, prop_match_5,
   prop_charsOrRegex_1, prop_charsOrRegex_2, prop_charsOrRegex_3, prop_charsOrRegex_4, prop_charsOrRegex_5,
   prop_regexParser_concat, prop_regexParser_concat_2, prop_regexParser_kleene, prop_regexParser_lit,
   prop_regexParser_alt, prop_regexParser_any, prop_regexParser_empty,
-  prop_literal, prop_literal_2
+  prop_literal, prop_literal_2, prop_regexParser_kleene_2, prop_match_6
   :: Bool
 
 prop_genmatch s = case (\g -> all (match g) (expandMany 10 g)) <$> parseRegex s
@@ -137,3 +155,22 @@ prop_regexParser_kleene_2  = [r|a*a|] == Concat (Kleene (Lit 'a')) (Lit 'a')
 prop_regexParser_alt       = [r|a|b|] == Alt (Lit 'a') (Lit 'b')
 prop_regexParser_concat    = [r|ab|]  == Concat (Lit 'a') (Lit 'b')
 prop_regexParser_concat_2  = [r|abc|] == Concat (Concat (Lit 'a') (Lit 'b')) (Lit 'c')
+
+prop_match_a1, prop_match_a2, prop_match_a3, prop_match_a4, prop_match_a5,
+  prop_match_a6, prop_match_a7, prop_match_a8, prop_match_a9, prop_match_a10 :: Bool
+
+prop_match_a1  = not $ match [r|a|b|] "ab"
+prop_match_a2  =       match [r|a|b|] "a"
+prop_match_a3  =       match [r|a|b|] "b"
+prop_match_a4  = not $ match [r|a|b|] "c"
+prop_match_a5  = not $ match [r|a|b|] ""
+prop_match_a6  =       match [r||] ""
+prop_match_a7  =       match [r|a|] "a"
+prop_match_a8  =       match [r|ab|] "ab"
+prop_match_a9  =       match [r|abcdefg|] "abcdefg"
+prop_match_a10 = not $ match [r|abcdefg|] "abcdefgh"
+
+prop_matches_generated_elements :: String -> Bool
+prop_matches_generated_elements s = case parseRegex s
+  of Left  _ -> True
+     Right x -> all (match x) (expandMany 10 x)
