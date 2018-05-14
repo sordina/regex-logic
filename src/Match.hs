@@ -3,6 +3,7 @@
 {-# LANGUAGE TupleSections #-}
 
 module Match
+  (toDFA, match, dfaMatch, DFA, Node, Edge, Rec(..))
   where
 
 import Data
@@ -16,7 +17,6 @@ import qualified RegexQQ as Q
 type DFA   = Graph Rec
 type Node  = Rec
 type Edge  = (Rec, Rec)
-type ReDFA = DFA
 data Rec   = R { ini :: Bool, fin :: Bool, skp :: Bool, tok :: Char, idi :: Int } deriving (Eq, Ord, Show)
 
 setIni :: Bool -> Rec -> Rec
@@ -30,6 +30,7 @@ setTok x r = r { tok = x }
 
 mkAny :: Int -> Rec
 mkAny = R True True True '.'
+
 mkLit :: Char -> Int -> Rec
 mkLit = R True True False
 
@@ -37,9 +38,9 @@ debugRegex :: Regex -> IO ()
 debugRegex a = do
   putStrLn ""
   print a
-  print $ toDfa a
+  print $ toDFA a
   putStrLn ""
-  putStrLn $ exportViaShow $ toDfa a
+  putStrLn $ exportViaShow $ toDFA a
 
 main :: IO ()
 main = do
@@ -51,10 +52,10 @@ main = do
   debugRegex [Q.r|a|b|]
   debugRegex [Q.r|ab|]
 
-toDfa :: Regex -> ReDFA
-toDfa r = evalState (toDfaM r) 0
+toDFA :: Regex -> DFA
+toDFA r = evalState (toDfaM r) 0
 
-toDfaM :: Regex -> State Int ReDFA
+toDfaM :: Regex -> State Int DFA
 toDfaM Empty          = pure empty
 toDfaM EOF            = pure empty
 toDfaM Any            = vertex . mkAny   <$> bump
@@ -80,36 +81,37 @@ trap :: Bool -> Node -> Node
 trap True  = id
 trap False = setFin False
 
-super :: ReDFA -> ReDFA -> ReDFA
+super :: DFA -> DFA -> DFA
 super a b = simplify (overlay a b)
 
 bump :: (Enum b, MonadState b f) => f b
 bump = modify succ *> get
 
-bridge :: Regex -> Regex -> ReDFA -> ReDFA -> ReDFA
+bridge :: Regex -> Regex -> DFA -> DFA -> DFA
 bridge r1 r2 a b = simplify $ overlays [trapper <$> a, barrier <$> b, c]
   where
     c       = (trapper <$> final a) `connect` (barrier <$> initial b)
     trapper = trap (clean r2)
     barrier = bar  (clean r1)
 
-loop :: ReDFA -> ReDFA
+loop :: DFA -> DFA
 loop a = simplify $ overlays [a, c]
   where
   c = final a `connect` initial a
 
-final :: ReDFA -> ReDFA
+final :: DFA -> DFA
 final a = vertices $ filter fin (vertexList a)
 
-initial :: ReDFA -> ReDFA
+initial :: DFA -> DFA
 initial a = vertices $ filter ini (vertexList a)
 
-matchString :: Regex -> String -> Bool
-matchString r s | null s && isEmpty i = True
-                | otherwise = or $ dfaMatch g s <$> i
+match :: Regex -> String -> Bool
+match r s
+  | null s && isEmpty i = True
+  | otherwise           = or $ dfaMatch g s <$> i
   where
   i = initial g
-  g = toDfa r
+  g = toDFA r
 
 dfaMatch :: DFA -> String -> Node -> Bool
 dfaMatch _   []     _ = False -- We have a node, so we must have something to match
@@ -132,20 +134,20 @@ fromSymbol a (n,_) = a == tok n
 prop_match_1, prop_match_2, prop_match_3, prop_match_4, prop_match_5,
   prop_match_6, prop_match_7, prop_match_8, prop_match_9, prop_match_10 :: Bool
 
-prop_match_1  = not $ matchString [Q.r|a|b|] "ab"
-prop_match_2  =       matchString [Q.r|a|b|] "a"
-prop_match_3  =       matchString [Q.r|a|b|] "b"
-prop_match_4  = not $ matchString [Q.r|a|b|] "c"
-prop_match_5  = not $ matchString [Q.r|a|b|] ""
-prop_match_6  =       matchString [Q.r||] ""
-prop_match_7  =       matchString [Q.r|a|] "a"
-prop_match_8  =       matchString [Q.r|ab|] "ab"
-prop_match_9  =       matchString [Q.r|abcdefg|] "abcdefg"
-prop_match_10 = not $ matchString [Q.r|abcdefg|] "abcdefgh"
+prop_match_1  = not $ match [Q.r|a|b|] "ab"
+prop_match_2  =       match [Q.r|a|b|] "a"
+prop_match_3  =       match [Q.r|a|b|] "b"
+prop_match_4  = not $ match [Q.r|a|b|] "c"
+prop_match_5  = not $ match [Q.r|a|b|] ""
+prop_match_6  =       match [Q.r||] ""
+prop_match_7  =       match [Q.r|a|] "a"
+prop_match_8  =       match [Q.r|ab|] "ab"
+prop_match_9  =       match [Q.r|abcdefg|] "abcdefg"
+prop_match_10 = not $ match [Q.r|abcdefg|] "abcdefgh"
 
 prop_matches_generated_elements :: String -> Bool
 prop_matches_generated_elements s = case r
     of Left  _ -> True
-       Right x -> all (matchString x) (expandMany 10 x)
+       Right x -> all (match x) (expandMany 10 x)
   where
   r = parseRegex s
