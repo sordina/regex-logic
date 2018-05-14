@@ -11,6 +11,7 @@ import System.Environment
 import Data.Monoid hiding (Alt, Any)
 import Text.Megaparsec hiding (match)
 import Data.Either
+import Algebra.Graph.Export.Dot
 import Data.Maybe
 import Data.List (intercalate)
 
@@ -20,12 +21,31 @@ main :: IO ()
 main = getArgs >>= go
 
 go :: [String] -> IO ()
+go ("dfa"      : xs) = runDFA xs
+go ("valid"    : xs) = runValid xs
 go ("match"    : xs) = runMatch xs
 go ("generate" : xs) = runGenerate xs
 go _                 = help >> exitFailure
 
 help :: IO ()
-help = putStrLn "Usage: regex-logic (match | generate) REGEX ..."
+help = putStrLn "Usage: regex-logic (dfa | valid | match | generate) REGEX ..."
+
+runDFA :: [String] -> IO ()
+runDFA []   = helpMatch
+runDFA (xs) = mapM_ (printDFA . fmap (exportViaShow . toDFA) . parseRegex) xs
+
+printDFA (Left x) = print x
+printDFA (Right x) = putStrLn x
+
+helpDFA :: IO ()
+helpDFA = putStrLn "Usage: regex-logic dfa REGEX*"
+
+runValid :: [String] -> IO ()
+runValid []   = helpMatch
+runValid (xs) = mapM_ (print . parseRegex) xs
+
+helpValid :: IO ()
+helpValid = putStrLn "Usage: regex-logic valid REGEX*"
 
 runMatch :: [String] -> IO ()
 runMatch []      = helpMatch
