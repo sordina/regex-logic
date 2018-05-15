@@ -23,6 +23,7 @@ main = getArgs >>= go
 go :: [String] -> IO ()
 go ("dfa"      : xs) = runDFA xs
 go ("valid"    : xs) = runValid xs
+go ("parse"    : xs) = runParse xs
 go ("match"    : xs) = runMatch xs
 go ("generate" : xs) = runGenerate xs
 go _                 = help >> exitFailure
@@ -43,10 +44,17 @@ helpDFA = putStrLn "Usage: regex-logic dfa REGEX*"
 
 runValid :: [String] -> IO ()
 runValid []   = helpMatch
-runValid (xs) = mapM_ (print . parseRegex) xs
+runValid (xs) = mapM_ (print . fmap Pretty . parseRegex) xs
 
 helpValid :: IO ()
 helpValid = putStrLn "Usage: regex-logic valid REGEX*"
+
+runParse :: [String] -> IO ()
+runParse []   = helpParse
+runParse (xs) = mapM_ (print . parseRegex) xs
+
+helpParse :: IO ()
+helpParse = putStrLn "Usage: regex-logic parse REGEX*"
 
 runMatch :: [String] -> IO ()
 runMatch []      = helpMatch
