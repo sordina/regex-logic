@@ -17,7 +17,7 @@ type Edge  = (Rec, Rec)
 data Rec   = R { ini :: Bool, fin :: Bool, skp :: Bool, tok :: Char, idi :: Int } deriving (Eq, Ord)
 
 instance Show Rec where
-  show r = bool "" "^" (ini r) ++ bool [tok r] "__" (skp r) ++ bool "" "$" (fin r)
+  show r = show (idi r) ++ ": " ++  bool "" "^" (ini r) ++ bool [tok r] "__" (skp r) ++ bool "" "$" (fin r)
 
 setIni :: Bool -> Rec -> Rec
 setIni x r = r { ini = x }
@@ -41,6 +41,7 @@ toDfaM (Lit s)        = vertex . mkLit s <$> bump
 toDfaM (Alt r1 r2)    = super            <$> toDfaM r1 <*> toDfaM r2
 toDfaM (Concat r1 r2) = bridge r1 r2     <$> toDfaM r1 <*> toDfaM r2
 toDfaM (Kleene r)     = loop             <$> toDfaM r
+toDfaM (Plus r)       = toDfaM (Concat r (Kleene r))
 
 clean :: Regex -> Bool -- Check if a regex can be completely vacuous
 clean Empty        = True
@@ -48,6 +49,7 @@ clean EOF          = True
 clean Any          = False
 clean (Lit _)      = False
 clean (Kleene _)   = True
+clean (Plus r)     = clean (Concat r (Kleene r))
 clean (Alt l r)    = clean l || clean r
 clean (Concat a b) = clean a && clean b
 

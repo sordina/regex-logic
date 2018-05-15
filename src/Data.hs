@@ -15,6 +15,7 @@ data Regex = Empty              -- The empty string
            | Concat Regex Regex -- Concatenation of two regexs
            | Alt    Regex Regex -- Choice between two regexs
            | Kleene Regex       -- The Kleene star
+           | Plus   Regex       -- The Kleene plus
            -- | Enum String        -- Character literals
 
   deriving (Eq, Lift)
@@ -42,6 +43,8 @@ pretty (Alt r1 r2)             = "(" <> pretty r1 <> ")|(" <> pretty r2 <> ")"
 pretty (Concat r1 r2)          = pretty r1 <> pretty r2
 pretty (Kleene (Lit s))        = [s] <> "*"
 pretty (Kleene r)              = "(" <> pretty r <> ")*"
+pretty (Plus (Lit s))          = [s] <> "+"
+pretty (Plus r)                = "(" <> pretty r <> ")+"
 
 specials :: String
-specials = "(*|).$\\"
+specials = "(*+|).$\\"

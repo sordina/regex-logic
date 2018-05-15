@@ -15,6 +15,7 @@ produceAll (Lit s)        = pure [s]
 produceAll (Alt r1 r2)    = produceAll r1 `interleave` produceAll r2
 produceAll (Concat r1 r2) = (<|>) <$> produceAll r1 <*> produceAll r2
 produceAll (Kleene r)     = produceAll $ foldr (Alt . mconcat . flip replicate r) Empty [0..]
+produceAll (Plus r)       = produceAll $ Concat r (Kleene r)
 
 expandAll :: Regex -> [String]
 expandAll = observeAll . produceAll

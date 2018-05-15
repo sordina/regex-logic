@@ -41,6 +41,7 @@ term = parens regex <|> (Any <$ char '.') <|> charParser
 
 table :: (Token s ~ Char, MonadParsec e s m) => [[Operator m Regex]]
 table = [ [ Postfix (Kleene <$ char '*') ]
+        , [ Postfix (Plus <$ char '+') ]
         , [ InfixL  (pure (\x y -> Concat x y)) ]
         , [ InfixL  (Alt <$ char '|') ]
         ]
