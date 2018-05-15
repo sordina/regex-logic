@@ -9,11 +9,15 @@ module Match
 import Data
 import Control.Monad.State
 import Algebra.Graph hiding (Empty)
+import Data.Bool
 
 type DFA   = Graph Rec
 type Node  = Rec
 type Edge  = (Rec, Rec)
-data Rec   = R { ini :: Bool, fin :: Bool, skp :: Bool, tok :: Char, idi :: Int } deriving (Eq, Ord, Show)
+data Rec   = R { ini :: Bool, fin :: Bool, skp :: Bool, tok :: Char, idi :: Int } deriving (Eq, Ord)
+
+instance Show Rec where
+  show r = bool "" "^" (ini r) ++ bool [tok r] "__" (skp r) ++ bool "" "$" (fin r)
 
 setIni :: Bool -> Rec -> Rec
 setIni x r = r { ini = x }
