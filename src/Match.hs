@@ -19,7 +19,7 @@ data Rec   = R { ini :: Bool, fin :: Bool, skp :: Bool, tok :: Char, idi :: Int 
 instance Show Rec where
   show r = show (idi r) ++ ": " ++  bool "" "^" (ini r) ++ bool (escape $ tok r) "." (skp r) ++ bool "" "$" (fin r)
     where
-    escape x | elem x specials = '\\' : [x]
+    escape x | elem x specials = "\\\\" ++ [x]
              | otherwise       = [x]
 
 setIni :: Bool -> Rec -> Rec
