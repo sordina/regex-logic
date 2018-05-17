@@ -19,9 +19,9 @@ type Edge  = (Rec, Rec)
 data Rec   = R { ini :: Bool, fin :: Bool, skp :: Bool, tok :: Char, idi :: Int } deriving (Eq, Ord, Show)
 
 exportSimple :: DFA -> String
-exportSimple = export (defaultStyle (fromString . show . idi)) { vertexAttributes = \n -> [ "label" := foo n ] }
+exportSimple = export (defaultStyle (fromString . show . idi)) { vertexAttributes = \n -> [ "label" := label n ] }
   where
-  foo r = bool "" "^" (ini r) ++ bool (escape $ tok r) "." (skp r) ++ bool "" "$" (fin r)
+  label r = bool "" "^" (ini r) ++ bool (escape $ tok r) "." (skp r) ++ bool "" "$" (fin r)
   escape x | elem x specials = "\\\\" ++ [x]
            | otherwise       = [x]
 
