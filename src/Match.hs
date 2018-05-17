@@ -49,23 +49,15 @@ toDfaM (Concat r1 r2) = bridge r1 r2     <$> toDfaM r1 <*> toDfaM r2
 toDfaM (Kleene r)     = loop             <$> toDfaM r
 toDfaM (Plus r)       = toDfaM (Concat r (Kleene r))
 
-clean :: Regex -> Bool -- Check if a regex can be completely vacuous
-clean Empty        = True
-clean EOF          = True
-clean Any          = False
-clean (Lit _)      = False
-clean (Kleene _)   = True
-clean (Plus r)     = clean (Concat r (Kleene r))
-clean (Alt l r)    = clean l || clean r
-clean (Concat a b) = clean a && clean b
-
-bar :: Bool -> Node -> Node
-bar True  = id
-bar False = setIni False
-
-trap :: Bool -> Node -> Node
-trap True  = id
-trap False = setFin False
+vanishing :: Regex -> Bool -- Check if a regex can be completely vacuous
+vanishing Empty        = True
+vanishing EOF          = True
+vanishing Any          = False
+vanishing (Lit _)      = False
+vanishing (Kleene _)   = True
+vanishing (Plus r)     = vanishing (Concat r (Kleene r))
+vanishing (Alt l r)    = vanishing l || vanishing r
+vanishing (Concat a b) = vanishing a && vanishing b
 
 super :: DFA -> DFA -> DFA
 super a b = simplify (overlay a b)
@@ -74,11 +66,11 @@ bump :: (Enum b, MonadState b f) => f b
 bump = modify succ *> get
 
 bridge :: Regex -> Regex -> DFA -> DFA -> DFA
-bridge r1 r2 a b = simplify $ overlays [trapper <$> a, barrier <$> b, c]
+bridge r1 r2 a b = simplify $ overlays [trap <$> a, block <$> b, c]
   where
-    c       = (trapper <$> final a) `connect` (barrier <$> initial b)
-    trapper = trap (clean r2)
-    barrier = bar  (clean r1)
+  c     = (trap <$> final a) `connect` (block <$> initial b)
+  trap  = bool (setFin False) id (vanishing r2)
+  block = bool (setIni False) id (vanishing r1)
 
 loop :: DFA -> DFA
 loop a = simplify $ overlays [a, c]
