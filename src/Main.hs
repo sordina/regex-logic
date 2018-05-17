@@ -11,7 +11,6 @@ import System.Environment
 import Data.Monoid hiding (Alt, Any)
 import Text.Megaparsec hiding (match)
 import Data.Either
-import Algebra.Graph.Export.Dot
 import Data.Maybe
 import Data.List (intercalate)
 
@@ -33,7 +32,7 @@ help = putStrLn "Usage: regex-logic (dfa | valid | match | generate) REGEX ..."
 
 runDFA :: [String] -> IO ()
 runDFA []   = helpMatch
-runDFA (xs) = mapM_ (printDFA . fmap (exportViaShow . toDFA) . parseRegex) xs
+runDFA (xs) = mapM_ (printDFA . fmap (exportSimple . toDFA) . parseRegex) xs
 
 printDFA :: Show a => Either a String -> IO ()
 printDFA (Left x) = print x
@@ -108,7 +107,7 @@ debugRegex a = do
   print a
   print $ toDFA a
   putStrLn ""
-  putStrLn $ exportViaShow $ toDFA a
+  putStrLn $ exportSimple $ toDFA a
 
 -- Simple Props
 

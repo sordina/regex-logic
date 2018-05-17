@@ -3,24 +3,27 @@
 {-# LANGUAGE TupleSections #-}
 
 module Match
-  (toDFA, match, dfaMatch, DFA, Node, Edge, Rec(..))
+  (exportSimple, toDFA, match, dfaMatch, DFA, Node, Edge, Rec(..))
   where
 
 import Data
 import Control.Monad.State
+import Algebra.Graph.Export.Dot
 import Algebra.Graph hiding (Empty)
 import Data.Bool
+import Data.String (fromString)
 
 type DFA   = Graph Rec
 type Node  = Rec
 type Edge  = (Rec, Rec)
-data Rec   = R { ini :: Bool, fin :: Bool, skp :: Bool, tok :: Char, idi :: Int } deriving (Eq, Ord)
+data Rec   = R { ini :: Bool, fin :: Bool, skp :: Bool, tok :: Char, idi :: Int } deriving (Eq, Ord, Show)
 
-instance Show Rec where
-  show r = show (idi r) ++ ": " ++  bool "" "^" (ini r) ++ bool (escape $ tok r) "." (skp r) ++ bool "" "$" (fin r)
-    where
-    escape x | elem x specials = "\\\\" ++ [x]
-             | otherwise       = [x]
+exportSimple :: DFA -> String
+exportSimple = export (defaultStyle (fromString . show . idi)) { vertexAttributes = \n -> [ "label" := foo n ] }
+  where
+  foo r = bool "" "^" (ini r) ++ bool (escape $ tok r) "." (skp r) ++ bool "" "$" (fin r)
+  escape x | elem x specials = "\\\\" ++ [x]
+           | otherwise       = [x]
 
 setIni :: Bool -> Rec -> Rec
 setIni x r = r { ini = x }
